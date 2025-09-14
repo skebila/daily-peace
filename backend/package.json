@@ -1,0 +1,26 @@
+{
+  "name": "daily-peace-backend",
+  "version": "1.0.0",
+  "description": "Backend service for Daily Peace app with DynamoDB integration",
+  "type": "module",
+  "main": "seedDailyPeace.js",
+  "scripts": {
+    "seed": "node seedDailyPeace.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "daily-peace",
+    "bible-verses",
+    "dynamodb",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.888.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
