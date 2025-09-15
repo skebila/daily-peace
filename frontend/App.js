@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, Dimensions, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons'; // icons
 import DailyVerse from './DailyVerse';
 const Splash1 = require('./assets/splash-1.png');
 const Splash2 = require('./assets/splash-2.png');
@@ -14,51 +15,50 @@ const { width, height } = Dimensions.get('window');
 export default function App() {
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#1a1a1a', '#2d2d2d', '#404040']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientBackground}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          bounces={true}
-        >
-          {/* Hero Section */}
-          <View style={styles.heroSection}>
-            <Image 
-              source={Splash2} 
-              style={styles.splashImage} 
-              resizeMode="contain"
-              onError={(error) => console.log('Image load error:', error)}
-              onLoad={() => console.log('Image loaded successfully')}
-            />
-            {/* <Text style={styles.subtitle}>Find your moment of tranquility</Text> */}
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          {/* <Image 
+            source={Splash1} 
+            style={styles.splashImage} 
+            resizeMode="contain"
+            onError={(error) => console.log('Image load error:', error)}
+            onLoad={() => console.log('Image loaded successfully')}
+          /> */}
+          {/* <Text style={styles.subtitle}>Find your moment of tranquility</Text> */}
+        </View>
+        
+        
+        {/* Bento Grid Layout */}
+        <View style={styles.bentoGrid}>
+          <View style={styles.greetingWrapper}>
+            <Ionicons name="sunny-outline" size={25} color="#F4B324" /> 
+            <Text style={styles.greetingText}>  Good Morning, <Text style={styles.highlightedText}>Steven</Text></Text>
+          </View>
+
+          {/* Main Verse Card - Takes up more space */}
+          <View style={styles.verseCard}>
+            <DailyVerse />
           </View>
           
-          {/* Bento Grid Layout */}
-          <View style={styles.bentoGrid}>
-            {/* Main Verse Card - Takes up more space */}
-            <View style={styles.verseCard}>
-              <DailyVerse />
-            </View>
-            
-            {/* Secondary Cards */}
-            <View style={styles.secondaryCard}>
-              <Text style={styles.cardTitle}>Today's Reflection</Text>
-              <Text style={styles.cardContent}>Take a moment to breathe and find peace in this verse.</Text>
-            </View>
-            
-            <View style={styles.secondaryCard}>
-              <Text style={styles.cardTitle}>Peace Timer</Text>
-              <Text style={styles.cardContent}>5 minutes of mindful breathing</Text>
-            </View>
+          {/* Secondary Cards */}
+          <View style={styles.secondaryCard}>
+            <Text style={styles.cardTitle}>Today's Reflection</Text>
+            <Text style={styles.cardContent}>Take a moment to breathe and find peace in this verse.</Text>
           </View>
           
-          <StatusBar style="light" />
-        </ScrollView>
-      </LinearGradient>
+          <View style={styles.secondaryCard}>
+            <Text style={styles.cardTitle}>Today's Exercise</Text>
+            <Text style={styles.cardContent}>2 minutes of mindful breathing</Text>
+          </View>
+        </View>
+        
+        <StatusBar style="light" />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -66,9 +66,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  gradientBackground: {
-    flex: 1,
+    backgroundColor: '#1a1a1a',
   },
   scrollContainer: {
     paddingTop: height * 0.08,
@@ -86,6 +84,19 @@ const styles = StyleSheet.create({
     height: width * 0.4,
     marginBottom: 0,
   },
+  greetingWrapper: {
+    flexDirection: 'row',
+    alignContent: 'center',
+    marginLeft: 15,
+  },
+  greetingText: {
+    color: '#d1feef',
+    fontSize: 20,
+    fontWeight: 600,
+  },
+  highlightedText: {
+    color: '#F4B324',
+  },
   subtitle: {
     fontSize: 20,
     color: 'rgba(255, 255, 255, 0.9)',
@@ -94,19 +105,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   bentoGrid: {
-    gap: 20,
+    gap: 15,
   },
   verseCard: {
-    marginBottom: 20,
+    marginHorizontal: 16,
+    backdropFilter: 'blur(20px)',
   },
   secondaryCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 24,
+    backgroundColor: 'rgba(49, 44, 44, 0.41)',
+    borderRadius: 10,
     padding: 24,
-    marginBottom: 16,
+    marginHorizontal: 16,
     backdropFilter: 'blur(20px)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#1a1a1a',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

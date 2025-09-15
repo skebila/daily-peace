@@ -1,27 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons'; // icons
 
 const API_URL = 'https://yeheu5s90h.execute-api.ca-central-1.amazonaws.com/default/getDailyVerse';
-const { width } = Dimensions.get('window');
 
 /**
  * parseVerse
- * - Splits the incoming verse string into { text, reference }
- * - Uses a separator that requires spaces around the dash (so " — " or " - " splits),
- *   which avoids splitting hyphenated references like "6:24-25".
- * - If no explicit dash separator is found, attempts a fallback pattern match
- *   to capture trailing references like "John 14:27" or "Numbers 6:24-25".
  */
 const parseVerse = (verseText) => {
   if (!verseText) return { text: '', reference: '' };
 
-  // Normalize whitespace and trim
   const str = String(verseText).trim();
 
-  // 1) Primary: look for a separator that is "space + dash (any type) + space"
-  // This will NOT match hyphens inside references (like "24-25") because those don't have spaces.
-  const sepRegex = /\s[—–-]\s(.+)$/u; // capture everything after the last " space-dash-space "
+  const sepRegex = /\s[—–-]\s(.+)$/u;
   const sepMatch = str.match(sepRegex);
 
   if (sepMatch) {
@@ -30,8 +22,6 @@ const parseVerse = (verseText) => {
     return { text, reference };
   }
 
-  // 2) Fallback: try to capture a trailing Bible reference pattern like "Numbers 6:24-25" or "John 14:27"
-  // This looks for "Words + space + digits:digits" at the end of the string (with optional -digits)
   const refPattern = /([A-Za-z\.\s]+?\b\d{1,3}:\d{1,3}(?:-\d{1,3})?)$/u;
   const refMatch = str.match(refPattern);
   if (refMatch) {
@@ -40,7 +30,6 @@ const parseVerse = (verseText) => {
     return { text, reference };
   }
 
-  // 3) Last-resort: no reference found — return whole string as text.
   return { text: str, reference: '' };
 };
 
@@ -70,41 +59,26 @@ const DailyVerse = () => {
       let data = null;
       try {
         data = await response.json();
-      } catch (parseErr) {
-        // If response isn't JSON, read as text
-        const text = await response.text();
-        data = text;
+      } catch {
+        data = await response.text();
       }
 
-      // If API Gateway proxy returned an envelope with body string, try to extract
       if (data && typeof data === 'object' && data.body) {
         try {
           const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
           data = parsedBody;
         } catch {
-          // body wasn't JSON, keep as-is (string)
           data = data.body;
         }
       }
 
-      // Determine the verse string from known shapes
       let verseText = '';
-      if (!data) {
-        verseText = '';
-      } else if (typeof data === 'string') {
-        // whole response is the verse string
-        verseText = data;
-      } else if (data.text) {
-        verseText = data.text;
-      } else if (data.verse) {
-        verseText = data.verse;
-      } else if (data.message && typeof data.message === 'string') {
-        // sometimes APIs return { message: "..." }
-        verseText = data.message;
-      } else {
-        // as a final fallback stringify
-        verseText = JSON.stringify(data);
-      }
+      if (!data) verseText = '';
+      else if (typeof data === 'string') verseText = data;
+      else if (data.text) verseText = data.text;
+      else if (data.verse) verseText = data.verse;
+      else if (data.message && typeof data.message === 'string') verseText = data.message;
+      else verseText = JSON.stringify(data);
 
       const parsed = parseVerse(verseText);
       setVerseData(parsed);
@@ -147,13 +121,36 @@ const DailyVerse = () => {
   }
 
   return (
-    <LinearGradient colors={['#667eea', '#764ba2']} style={styles.glassCard}>
+    <LinearGradient colors={['#78B9B5', '#065084']} style={styles.glassCard}>
       <View style={styles.verseContainer}>
-        <Text style={styles.verseTitle}>Verse of the Day</Text>
+        <Text style={styles.verseTitle}>Today's verse</Text>
         {verseData.reference ? (
           <Text style={styles.verseReference}>{verseData.reference}</Text>
         ) : null}
-        <Text style={styles.verseText}>{verseData.text}</Text>
+
+        <View style={styles.verseTextContainer}>
+          <Text style={styles.verseText}>{verseData.text}</Text>
+        </View>
+
+        {/* Bottom icons row */}
+        <View style={styles.iconRow}>
+          <TouchableOpacity style={styles.iconWrapper}>
+            <Ionicons name="heart-outline" size={15} color="#fff" />
+            <Text style={styles.iconText}>1.2M</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconWrapper}>
+            <Ionicons name="chatbubble-outline" size={15} color="#fff" />
+            <Text style={styles.iconText}>6,826</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconWrapper}>
+            <Ionicons name="share-outline" size={15} color="#fff" />
+            <Text style={styles.iconText}>447.7K</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconWrapper}>
+            <Ionicons name="bookmark-outline" size={15} color="#fff" />
+            <Text style={styles.iconText}>12.3K</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </LinearGradient>
   );
@@ -161,14 +158,17 @@ const DailyVerse = () => {
 
 const styles = StyleSheet.create({
   glassCard: {
-    padding: 24,
-    marginBottom: 16,
+    padding: 15,
+    //marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
     minHeight: 180,
+    borderWidth: 1,
+    borderRadius: 10,
+    borderColor: '#1a1a1a',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -216,28 +216,57 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   verseContainer: {
-    paddingVertical: 8,
+    flex: 1,
+    aspectRatio: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    position: 'relative',
   },
   verseTitle: {
-    fontSize: 16,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
-    marginBottom: 6,
+    position: 'absolute',
+    top: 12,
+    left: 0,
   },
   verseReference: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#ffffff',
     fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'left',
+    position: 'absolute',
+    top: 30,
+    left: 0,
+  },
+  verseTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   verseText: {
     fontSize: 18,
-    lineHeight: 28,
     color: '#ffffff',
-    textAlign: 'center',
+    textAlign: 'left',
     fontWeight: '400',
-    fontStyle: 'italic',
+    lineHeight: 26,
+  },
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    position: 'absolute',
+    bottom: 8,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+  },
+  iconText: {
+    fontSize: 12,
+    color: '#fff',
+    marginTop: 2,
   },
 });
 
