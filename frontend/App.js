@@ -1,7 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ScrollView, Dimensions, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Dimensions, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import DailyVerse from './DailyVerse';
+const Splash1 = require('./assets/splash-1.png');
+const Splash2 = require('./assets/splash-2.png');
+const Splash3 = require('./assets/splash-3.png');
+const Splash4 = require('./assets/splash-4.png');
+const Splash5 = require('./assets/splash-5.png');
+const Splash6 = require('./assets/splash-6.png');
 
 const { width, height } = Dimensions.get('window');
 
@@ -9,7 +15,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#667eea', '#764ba2', '#f093fb']}
+        colors={['#1a1a1a', '#2d2d2d', '#404040']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
@@ -21,8 +27,14 @@ export default function App() {
         >
           {/* Hero Section */}
           <View style={styles.heroSection}>
-            <Text style={styles.title}>Daily Peace</Text>
-            <Text style={styles.subtitle}>Find your moment of tranquility</Text>
+            <Image 
+              source={Splash2} 
+              style={styles.splashImage} 
+              resizeMode="contain"
+              onError={(error) => console.log('Image load error:', error)}
+              onLoad={() => console.log('Image loaded successfully')}
+            />
+            {/* <Text style={styles.subtitle}>Find your moment of tranquility</Text> */}
           </View>
           
           {/* Bento Grid Layout */}
@@ -60,25 +72,19 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingTop: height * 0.08,
-    paddingHorizontal: 24,
+    paddingHorizontal: 0,
     paddingBottom: 40,
     minHeight: height,
   },
   heroSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 5,
     paddingVertical: 20,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 16,
-    letterSpacing: -1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+  splashImage: {
+    width: width * 0.4,
+    height: width * 0.4,
+    marginBottom: 0,
   },
   subtitle: {
     fontSize: 20,

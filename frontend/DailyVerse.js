@@ -5,8 +5,47 @@ import { LinearGradient } from 'expo-linear-gradient';
 const API_URL = 'https://yeheu5s90h.execute-api.ca-central-1.amazonaws.com/default/getDailyVerse';
 const { width } = Dimensions.get('window');
 
+/**
+ * parseVerse
+ * - Splits the incoming verse string into { text, reference }
+ * - Uses a separator that requires spaces around the dash (so " — " or " - " splits),
+ *   which avoids splitting hyphenated references like "6:24-25".
+ * - If no explicit dash separator is found, attempts a fallback pattern match
+ *   to capture trailing references like "John 14:27" or "Numbers 6:24-25".
+ */
+const parseVerse = (verseText) => {
+  if (!verseText) return { text: '', reference: '' };
+
+  // Normalize whitespace and trim
+  const str = String(verseText).trim();
+
+  // 1) Primary: look for a separator that is "space + dash (any type) + space"
+  // This will NOT match hyphens inside references (like "24-25") because those don't have spaces.
+  const sepRegex = /\s[—–-]\s(.+)$/u; // capture everything after the last " space-dash-space "
+  const sepMatch = str.match(sepRegex);
+
+  if (sepMatch) {
+    const reference = sepMatch[1].trim();
+    const text = str.slice(0, sepMatch.index).trim();
+    return { text, reference };
+  }
+
+  // 2) Fallback: try to capture a trailing Bible reference pattern like "Numbers 6:24-25" or "John 14:27"
+  // This looks for "Words + space + digits:digits" at the end of the string (with optional -digits)
+  const refPattern = /([A-Za-z\.\s]+?\b\d{1,3}:\d{1,3}(?:-\d{1,3})?)$/u;
+  const refMatch = str.match(refPattern);
+  if (refMatch) {
+    const reference = refMatch[1].trim();
+    const text = str.slice(0, refMatch.index).trim().replace(/[—–-]\s*$/u, '').trim();
+    return { text, reference };
+  }
+
+  // 3) Last-resort: no reference found — return whole string as text.
+  return { text: str, reference: '' };
+};
+
 const DailyVerse = () => {
-  const [verse, setVerse] = useState(null);
+  const [verseData, setVerseData] = useState({ text: '', reference: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,33 +57,61 @@ const DailyVerse = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(API_URL, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      
-      // Handle different possible response structures
-      if (data.verse || data.text || data.body) {
-        setVerse(data.verse || data.text || data.body);
-      } else if (typeof data === 'string') {
-        setVerse(data);
-      } else {
-        // If the response has a different structure, display the whole response
-        setVerse(JSON.stringify(data, null, 2));
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (parseErr) {
+        // If response isn't JSON, read as text
+        const text = await response.text();
+        data = text;
       }
-      
+
+      // If API Gateway proxy returned an envelope with body string, try to extract
+      if (data && typeof data === 'object' && data.body) {
+        try {
+          const parsedBody = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+          data = parsedBody;
+        } catch {
+          // body wasn't JSON, keep as-is (string)
+          data = data.body;
+        }
+      }
+
+      // Determine the verse string from known shapes
+      let verseText = '';
+      if (!data) {
+        verseText = '';
+      } else if (typeof data === 'string') {
+        // whole response is the verse string
+        verseText = data;
+      } else if (data.text) {
+        verseText = data.text;
+      } else if (data.verse) {
+        verseText = data.verse;
+      } else if (data.message && typeof data.message === 'string') {
+        // sometimes APIs return { message: "..." }
+        verseText = data.message;
+      } else {
+        // as a final fallback stringify
+        verseText = JSON.stringify(data);
+      }
+
+      const parsed = parseVerse(verseText);
+      setVerseData(parsed);
     } catch (err) {
       console.error('Error fetching daily verse:', err);
-      setError(err.message);
+      setError(err.message || 'Unknown error');
+      setVerseData({ text: '', reference: '' });
     } finally {
       setLoading(false);
     }
@@ -56,10 +123,7 @@ const DailyVerse = () => {
 
   if (loading) {
     return (
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)']}
-        style={styles.glassCard}
-      >
+      <LinearGradient colors={['#3a7bd5', '#3a6073']} style={styles.glassCard}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#ffffff" />
           <Text style={styles.loadingText}>Loading...</Text>
@@ -70,13 +134,10 @@ const DailyVerse = () => {
 
   if (error) {
     return (
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)']}
-        style={styles.glassCard}
-      >
+      <LinearGradient colors={['#ee9ca7', '#ffdde1']} style={styles.glassCard}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Failed to load verse</Text>
-          <Text style={styles.errorSubtext}>Something went wrong</Text>
+          <Text style={styles.errorSubtext}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
@@ -86,13 +147,13 @@ const DailyVerse = () => {
   }
 
   return (
-    <LinearGradient
-      colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.15)']}
-      style={styles.glassCard}
-    >
+    <LinearGradient colors={['#667eea', '#764ba2']} style={styles.glassCard}>
       <View style={styles.verseContainer}>
-        <Text style={styles.verseLabel}>Today's Verse</Text>
-        <Text style={styles.verseText}>{verse}</Text>
+        <Text style={styles.verseTitle}>Verse of the Day</Text>
+        {verseData.reference ? (
+          <Text style={styles.verseReference}>{verseData.reference}</Text>
+        ) : null}
+        <Text style={styles.verseText}>{verseData.text}</Text>
       </View>
     </LinearGradient>
   );
@@ -100,20 +161,14 @@ const DailyVerse = () => {
 
 const styles = StyleSheet.create({
   glassCard: {
-    borderRadius: 32,
-    padding: 32,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    padding: 24,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 12,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
-    minHeight: 200,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    minHeight: 180,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -122,9 +177,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '300',
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '400',
     letterSpacing: 0.5,
   },
   errorContainer: {
@@ -135,58 +190,54 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 20,
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 8,
-    letterSpacing: -0.5,
   },
   errorSubtext: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
     marginBottom: 24,
-    fontWeight: '300',
+    fontWeight: '400',
   },
   retryButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.4)',
-    minWidth: 140,
   },
   retryButtonText: {
     fontSize: 16,
     color: '#ffffff',
     fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.5,
   },
   verseContainer: {
     paddingVertical: 8,
-    alignItems: 'center',
   },
-  verseLabel: {
+  verseTitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 24,
-    textAlign: 'center',
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  verseReference: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'left',
   },
   verseText: {
-    fontSize: 22,
-    lineHeight: 36,
+    fontSize: 18,
+    lineHeight: 28,
     color: '#ffffff',
     textAlign: 'center',
-    fontStyle: 'italic',
     fontWeight: '400',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    fontStyle: 'italic',
   },
 });
 
