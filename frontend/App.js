@@ -21,16 +21,16 @@ export default function App() {
         bounces={true}
       >
         {/* Hero Section */}
-        <View style={styles.heroSection}>
-          {/* <Image 
+        {/* <View style={styles.heroSection}>
+          <Image 
             source={Splash1} 
             style={styles.splashImage} 
             resizeMode="contain"
             onError={(error) => console.log('Image load error:', error)}
             onLoad={() => console.log('Image loaded successfully')}
-          /> */}
-          {/* <Text style={styles.subtitle}>Find your moment of tranquility</Text> */}
-        </View>
+          /> 
+          * <Text style={styles.subtitle}>Find your moment of tranquility</Text>
+        </View> */}
         
         
         {/* Bento Grid Layout */}
