@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, Dimensions, SafeAreaView, Image } f
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons'; // icons
 import DailyVerse from './DailyVerse';
+
 const Splash1 = require('./assets/splash-1.png');
 const Splash2 = require('./assets/splash-2.png');
 const Splash3 = require('./assets/splash-3.png');

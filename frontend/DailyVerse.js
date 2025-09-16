@@ -250,6 +250,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     fontWeight: '400',
     lineHeight: 26,
+    letterSpacing: 0.3,
   },
   iconRow: {
     flexDirection: 'row',
